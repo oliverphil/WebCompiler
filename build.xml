@@ -1,0 +1,23 @@
+<project name="webcompiler" default="compile">
+    <import file="config.xml" />
+
+    <target name="compile">
+        <javac debug="true" debuglevel="vars,lines,source" source="1.8" target="1.8" includeantruntime="true">
+            <src path="src" />
+            <include name="*/**"/>
+            <exclude name="*/**/package-info.java"/>
+            <classpath>
+                <path refid="MAVEN_DEPS"/>
+            </classpath>
+        </javac>
+    </target>
+
+    <target name="run" depends="compile">
+        <java classname="nz.ac.vuw.ecs.webcompiler.Main" fork="true">
+            <classpath>
+                <pathelement location="src"/>
+                <path refid="MAVEN_DEPS"/>
+            </classpath>
+        </java>
+    </target>
+</project>

@@ -1,11 +1,9 @@
 package nz.ac.vuw.ecs.webcompiler;
 
+import com.sun.org.slf4j.internal.Logger;
 import nz.ac.vuw.ecs.webcompiler.utils.HomePage;
 import nz.ac.vuw.ecs.webcompiler.utils.StaticContentRequestHandler;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpStatus;
+import org.apache.http.*;
 import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
@@ -20,7 +18,6 @@ import java.io.IOException;
 import java.net.BindException;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Logger;
 
 public class Main {
 
@@ -46,6 +43,7 @@ public class Main {
         SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(1500).build();
 
         HttpServer server = ServerBootstrap.bootstrap().setListenerPort(9100).setSocketConfig(socketConfig)
+                .setExceptionLogger(ExceptionLogger.STD_ERR)
                 .registerHandler("/css/*", new StaticContentRequestHandler(TEXT_CSS))
                 .registerHandler("/js/*", new StaticContentRequestHandler(TEXT_JAVASCRIPT))
                 .registerHandler("/", new HomePage(TEXT_HTML))

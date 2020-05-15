@@ -20,8 +20,6 @@ public class Main {
     public static final ContentType IMAGE_GIF = ContentType.create("image/gif");
 
     public static void main(String[] args) throws IOException {
-        String userhome = System.getProperty("user.home");
-
         try {
             HttpServer server = startWebServer();
             server.start();
@@ -39,6 +37,7 @@ public class Main {
                 .registerHandler("/css/*", new StaticContentRequestHandler(TEXT_CSS))
                 .registerHandler("/js/*", new StaticContentRequestHandler(TEXT_JAVASCRIPT))
                 .registerHandler("/", new HomePage(TEXT_HTML))
+                .registerHandler("/compile", new JavaWebCompiler())
                 .create();
 
         return server;

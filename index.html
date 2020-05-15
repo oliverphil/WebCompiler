@@ -1,4 +1,22 @@
 <html>
 
-<body>Hello World</body>
+<body>
+    <script>
+        function compile() {
+            var program = document.getElementById("program").value;
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", "/compile", true);
+
+            xhr.onreadystatechange = function() {
+                document.getElementById("console").value = xhr.response;
+            }
+
+            xhr.send(program);
+        }
+    </script>
+    <textarea id="program" > </textarea>
+    <button type="button" id="compile" onClick="compile()">Compile</button>
+
+    <textarea id="console" readonly></textarea>
+</body>
 </html>

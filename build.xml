@@ -10,6 +10,9 @@
                 <path refid="MAVEN_DEPS"/>
             </classpath>
         </javac>
+        <subant target="build">
+            <fileset dir="jdk-langtools/make/langtools" includes="build.xml" />
+        </subant>
     </target>
 
     <target name="run" depends="compile">

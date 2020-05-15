@@ -1,22 +1,14 @@
 package nz.ac.vuw.ecs.webcompiler;
 
-import com.sun.org.slf4j.internal.Logger;
 import nz.ac.vuw.ecs.webcompiler.utils.HomePage;
 import nz.ac.vuw.ecs.webcompiler.utils.StaticContentRequestHandler;
 import org.apache.http.*;
-import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
-import org.apache.http.entity.FileEntity;
 import org.apache.http.impl.bootstrap.HttpServer;
 import org.apache.http.impl.bootstrap.ServerBootstrap;
-import org.apache.http.protocol.HttpContext;
-import org.apache.http.protocol.HttpRequestHandler;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.BindException;
-import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 public class Main {

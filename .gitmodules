@@ -1,0 +1,3 @@
+[submodule "jdk-langtools"]
+	path = jdk-langtools
+	url = git@gitlab.ecs.vuw.ac.nz:course-work/project489/2020/oliverphil/incremental-compilation-workloads/jdk-langtools.git

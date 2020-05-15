@@ -2,7 +2,7 @@
     <import file="config.xml" />
 
     <target name="compile">
-        <javac debug="true" debuglevel="vars,lines,source" source="1.8" target="1.8" includeantruntime="true">
+        <javac debug="true" debuglevel="vars,lines,source" source="13" target="13" includeantruntime="true">
             <src path="src" />
             <include name="*/**"/>
             <exclude name="*/**/package-info.java"/>

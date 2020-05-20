@@ -7,7 +7,12 @@ import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
 
-import java.io.*;
+import javax.json.Json;
+import javax.json.JsonObjectBuilder;
+import java.io.BufferedReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -54,8 +59,13 @@ public class JavaWebCompiler implements HttpRequestHandler {
                 result = stderrLines.get();
             }
 
+            JsonObjectBuilder jsonBuilder = Json.createObjectBuilder();
+            jsonBuilder.add("compileResult", result);
+            String jsonResponse = jsonBuilder.build().toString();
+
             response.setStatusCode(HttpStatus.SC_OK);
-            response.setEntity(new StringEntity(result));
+            response.addHeader("Content-Type", "application/json");
+            response.setEntity(new StringEntity(jsonResponse));
             return;
         } catch(IOException e) {
             e.printStackTrace();

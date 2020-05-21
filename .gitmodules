@@ -1,3 +1,6 @@
 [submodule "jdk-langtools"]
 	path = jdk-langtools
 	url = git@gitlab.ecs.vuw.ac.nz:course-work/project489/2020/oliverphil/incremental-compilation-workloads/jdk-langtools.git
+[submodule "webcompiler-frontend"]
+	path = webcompiler-frontend
+	url = git@gitlab.ecs.vuw.ac.nz:course-work/project489/2020/oliverphil/incremental-compilation-workloads/webcompiler-frontend.git

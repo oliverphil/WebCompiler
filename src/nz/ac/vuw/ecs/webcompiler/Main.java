@@ -2,7 +2,7 @@ package nz.ac.vuw.ecs.webcompiler;
 
 import nz.ac.vuw.ecs.webcompiler.utils.HomePage;
 import nz.ac.vuw.ecs.webcompiler.utils.StaticContentRequestHandler;
-import org.apache.http.*;
+import org.apache.http.ExceptionLogger;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.bootstrap.HttpServer;
@@ -30,12 +30,12 @@ public class Main {
     }
 
     public static HttpServer startWebServer() throws IOException {
-        SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(1500).build();
+        SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(20*1000).build();
 
         HttpServer server = ServerBootstrap.bootstrap().setListenerPort(9100).setSocketConfig(socketConfig)
                 .setExceptionLogger(ExceptionLogger.STD_ERR)
-                .registerHandler("/css/*", new StaticContentRequestHandler(TEXT_CSS))
-                .registerHandler("/js/*", new StaticContentRequestHandler(TEXT_JAVASCRIPT))
+                .registerHandler("*.html", new StaticContentRequestHandler(TEXT_HTML))
+                .registerHandler("*.js", new StaticContentRequestHandler(TEXT_JAVASCRIPT))
                 .registerHandler("/", new HomePage(TEXT_HTML))
                 .registerHandler("/compile", new JavaWebCompiler())
                 .create();

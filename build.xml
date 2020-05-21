@@ -17,7 +17,33 @@
         </subant>
     </target>
 
+    <target name="build" depends="install">
+        <exec executable="npm" failonerror="true">
+            <arg value="run" />
+            <arg value="build" />
+            <arg value="--prefix" />
+            <arg value="webcompiler-frontend" />
+        </exec>
+    </target>
+
+    <target name="install" depends="compile">
+        <exec executable="npm" failonerror="true">
+            <arg value="install" />
+            <arg value="--prefix" />
+            <arg value="webcompiler-frontend" />
+        </exec>
+    </target>
+
     <target name="run" depends="compile">
+        <java classname="nz.ac.vuw.ecs.webcompiler.Main" fork="true">
+            <classpath>
+                <pathelement location="build/classes"/>
+                <path refid="MAVEN_DEPS"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="run-prod" depends="build">
         <java classname="nz.ac.vuw.ecs.webcompiler.Main" fork="true">
             <classpath>
                 <pathelement location="build/classes"/>

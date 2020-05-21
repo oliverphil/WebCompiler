@@ -33,7 +33,7 @@ public class HomePage implements HttpRequestHandler {
 
     private void get(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
         try {
-            String path = "index.html";
+            String path = "webcompiler-frontend/dist/WebCompilerFrontend/index.html";
             File file = new File(".", path);
             httpResponse.setStatusCode(HttpStatus.SC_OK);
             httpResponse.setEntity(new FileEntity(file, this.contentType));

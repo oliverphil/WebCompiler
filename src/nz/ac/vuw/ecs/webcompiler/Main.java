@@ -36,6 +36,7 @@ public class Main {
                 .setExceptionLogger(ExceptionLogger.STD_ERR)
                 .registerHandler("*.html", new StaticContentRequestHandler(TEXT_HTML))
                 .registerHandler("*.js", new StaticContentRequestHandler(TEXT_JAVASCRIPT))
+                .registerHandler("*.css", new StaticContentRequestHandler(TEXT_CSS))
                 .registerHandler("/", new HomePage(TEXT_HTML))
                 .registerHandler("/compile", new JavaWebCompiler())
                 .create();

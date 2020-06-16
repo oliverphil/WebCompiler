@@ -1,6 +1,8 @@
 package nz.ac.vuw.ecs.webcompiler;
 
+import nz.ac.vuw.ecs.webcompiler.utils.CodingChallengesRequestHandler;
 import nz.ac.vuw.ecs.webcompiler.utils.HomePage;
+import nz.ac.vuw.ecs.webcompiler.utils.MarkdownImageRequestHandler;
 import nz.ac.vuw.ecs.webcompiler.utils.StaticContentRequestHandler;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.config.SocketConfig;
@@ -39,6 +41,8 @@ public class Main {
                 .registerHandler("*.css", new StaticContentRequestHandler(TEXT_CSS))
                 .registerHandler("/", new HomePage(TEXT_HTML))
                 .registerHandler("/compile", new JavaWebCompiler())
+                .registerHandler("/challenges", new CodingChallengesRequestHandler())
+                .registerHandler("*.png", new MarkdownImageRequestHandler())
                 .create();
 
         return server;

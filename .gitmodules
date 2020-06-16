@@ -4,3 +4,6 @@
 [submodule "webcompiler-frontend"]
 	path = webcompiler-frontend
 	url = git@gitlab.ecs.vuw.ac.nz:course-work/project489/2020/oliverphil/incremental-compilation-workloads/webcompiler-frontend.git
+[submodule "coding-challenges"]
+	path = coding-challenges
+	url = git@gitlab.ecs.vuw.ac.nz:course-work/project489/2020/oliverphil/incremental-compilation-workloads/coding-challenges.git

@@ -25,9 +25,12 @@ public class JavaWebCompiler implements HttpRequestHandler {
         String requestMethod = httpRequest.getRequestLine().getMethod().toUpperCase(Locale.ROOT);
         if (requestMethod.equals("POST")) {
             post(httpRequest, httpResponse, httpContext);
-        } else {
+        } else if(requestMethod.equals("OPTIONS")) {
+            httpResponse.setStatusCode(HttpStatus.SC_OK);
+        }else {
             httpResponse.setStatusCode(HttpStatus.SC_BAD_REQUEST);
         }
+        httpResponse.addHeader("Access-Control-Allow-Origin", "http://localhost:4200");
     }
 
     private void post(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
@@ -37,7 +40,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
         String code = json.getString("code");
         String sessionKey = json.getString("sessionKey");
         String challengeName = json.getString("challengeName");
-        if (!content.isEmpty() && !sessionKey.isEmpty()) {
+        if (!challengeName.isEmpty() && !sessionKey.isEmpty()) {
             compile(code, sessionKey, challengeName, httpResponse);
         }
     }
@@ -54,6 +57,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
                 String importsString = new BufferedReader(new FileReader(imports)).lines().reduce((a, b) -> a + "\n" + b).get();
                 fileContent = String.format("%s\n%s", importsString, fileContent);
             }
+            fileContent = String.format("package %s;\n%s", challengeName, fileContent);
             System.out.println(fileContent);
             writer.write(fileContent);
             writer.close();

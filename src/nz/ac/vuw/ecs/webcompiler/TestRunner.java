@@ -1,17 +1,21 @@
 package nz.ac.vuw.ecs.webcompiler;
 
 import org.apache.http.*;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
 
 import javax.json.Json;
+import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
+import javax.json.JsonObjectBuilder;
 import java.io.*;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class TestRunner implements HttpRequestHandler {
 
@@ -38,47 +42,52 @@ public class TestRunner implements HttpRequestHandler {
         }
     }
 
+    private void addListToJsonObject(List<String> lines, JsonObjectBuilder objectBuilder, String arrayKey) {
+        JsonArrayBuilder jsonArray = Json.createArrayBuilder();
+        lines.forEach(s -> jsonArray.add(s));
+        objectBuilder.add(arrayKey, jsonArray);
+    }
+
+    private boolean handleProcessInformation(HttpResponse httpResponse, Process proc, JsonObjectBuilder json, boolean compileTime) {
+        BufferedReader stderr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
+
+        List<String> errorList = stderr.lines().filter(a -> a.contains("error")).collect(Collectors.toList());
+        if (!errorList.isEmpty() && compileTime) {
+            addListToJsonObject(errorList, json, "compileErrors");
+            return false;
+        }
+
+        BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
+        List<String> testResultList = stdout.lines().filter(a -> a.matches("^\\[\\W+\\d+\\Wtests.*\\]$")).collect(Collectors.toList());
+        if (!testResultList.isEmpty() && !compileTime) {
+            addListToJsonObject(testResultList, json, "testResults");
+        }
+
+        return true;
+    }
+
     private void test(String sessionKey, String challengeName, HttpResponse httpResponse) {
         try {
             Map<String, String> env = System.getenv();
             File challengeDir = new File(String.format("build/%s/%s", sessionKey, challengeName));
             File testFile = new File(String.format("%s/%sTests.java", challengeDir.getPath(), challengeName));
-            //javac -cp junit-platform-console-standalone-1.7.0-M1.jar JavacFlagTests.java
-            //java -jar junit-platform-console-standalone-1.7.0-M1.jar --class-path . --scan-class-path
             ProcessBuilder builder = new ProcessBuilder();
+
+            JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+
             Process compile = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/javac", "-Xlint:none", "-cp",
                     String.format("%s:build/%s", JUNIT_JAR_PATH, sessionKey),
                     testFile.getPath()).start();
-            BufferedReader e = new BufferedReader(new InputStreamReader(compile.getErrorStream()));
-            BufferedReader o = new BufferedReader(new InputStreamReader(compile.getInputStream()));
-            Optional<String> eos = e.lines().reduce((a, b) -> a + "\n" + b);
-            if (eos.isPresent()) {
-                String s = eos.get();
-                System.out.println(s);
-            }
-            Optional<String> oos = o.lines().reduce((a, b) -> a + "\n" + b);
-            if (oos.isPresent()) {
-                String s = oos.get();
-                System.out.println(oos);
+
+            if (handleProcessInformation(httpResponse, compile, jsonObjectBuilder, true)) {
+                Process runTests = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/java", "-jar", JUNIT_JAR_PATH, "--class-path",
+                        String.format("build/%s", sessionKey), "--scan-class-path", "-n", String.format("^.*?%sTests.*?$", challengeName)).start();
+                handleProcessInformation(httpResponse, runTests, jsonObjectBuilder, false);
             }
 
-            Process runTests = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/java", "-jar", JUNIT_JAR_PATH, "--class-path",
-                    String.format("build/%s", sessionKey), "--scan-class-path", "-n", String.format("^.*?%sTests.*?$", challengeName)).start();
-            BufferedReader stderr = new BufferedReader(new InputStreamReader(runTests.getErrorStream()));
-            BufferedReader stdout = new BufferedReader(new InputStreamReader(runTests.getInputStream()));
-
-            Optional<String> err = stderr.lines().reduce((a, b) -> a + "\n" + b);
-            if(err.isPresent()) {
-                String s = err.get();
-                System.out.println(s);
-            }
-            Optional<String> out = stdout.lines().reduce((a, b) -> a + "\n" + b);
-            if (out.isPresent()) {
-                String s = out.get();
-                System.out.println(s);
-            }
-
+            httpResponse.setEntity(new StringEntity(jsonObjectBuilder.build().toString()));
             httpResponse.addHeader("Access-Control-Allow-Origin", "http://localhost:4200");
+            httpResponse.setStatusCode(HttpStatus.SC_OK);
             return;
         } catch(IOException e) {
             e.printStackTrace();

@@ -43,6 +43,7 @@ public class Main {
                 .registerHandler("/compile", new JavaWebCompiler())
                 .registerHandler("/challenges", new CodingChallengesRequestHandler())
                 .registerHandler("*.png", new MarkdownImageRequestHandler())
+                .registerHandler("/test", new TestRunner())
                 .create();
 
         return server;

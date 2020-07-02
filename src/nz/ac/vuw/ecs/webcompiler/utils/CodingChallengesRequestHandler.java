@@ -64,7 +64,6 @@ public class CodingChallengesRequestHandler implements HttpRequestHandler {
             String jsonResponse = jsonChallenges.build().toString();
 
             httpResponse.setStatusCode(HttpStatus.SC_OK);
-            httpResponse.addHeader("Access-Control-Allow-Origin", "http://localhost:4200");
             httpResponse.addHeader("Content-Type", "application/json");
             httpResponse.setEntity(new StringEntity(jsonResponse));
         } catch (Exception e) {

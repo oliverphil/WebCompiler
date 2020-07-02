@@ -7,6 +7,7 @@ import nz.ac.vuw.ecs.webcompiler.utils.StaticContentRequestHandler;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
+import org.apache.http.impl.NoConnectionReuseStrategy;
 import org.apache.http.impl.bootstrap.HttpServer;
 import org.apache.http.impl.bootstrap.ServerBootstrap;
 
@@ -36,10 +37,12 @@ public class Main {
 
         HttpServer server = ServerBootstrap.bootstrap().setListenerPort(9100).setSocketConfig(socketConfig)
                 .setExceptionLogger(ExceptionLogger.STD_ERR)
+                .setConnectionReuseStrategy(new NoConnectionReuseStrategy())
                 .registerHandler("*.html", new StaticContentRequestHandler(TEXT_HTML))
                 .registerHandler("*.js", new StaticContentRequestHandler(TEXT_JAVASCRIPT))
                 .registerHandler("*.css", new StaticContentRequestHandler(TEXT_CSS))
                 .registerHandler("/", new HomePage(TEXT_HTML))
+                .registerHandler("/editor", new HomePage(TEXT_HTML))
                 .registerHandler("/compile", new JavaWebCompiler())
                 .registerHandler("/challenges", new CodingChallengesRequestHandler())
                 .registerHandler("*.png", new MarkdownImageRequestHandler())

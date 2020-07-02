@@ -86,7 +86,6 @@ public class TestRunner implements HttpRequestHandler {
             }
 
             httpResponse.setEntity(new StringEntity(jsonObjectBuilder.build().toString()));
-            httpResponse.addHeader("Access-Control-Allow-Origin", "http://localhost:4200");
             httpResponse.setStatusCode(HttpStatus.SC_OK);
             return;
         } catch(IOException e) {

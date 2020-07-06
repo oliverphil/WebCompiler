@@ -1,0 +1,35 @@
+/* AUTOMATICALLY GENERATED ON Mon Jul 06 13:06:13 NZST 2020*/
+/* DO NOT EDIT */
+
+grant {
+  //specific to deployment
+
+  //required permissions to run unit tests
+  permission java.io.FilePermission "build/-", "read";
+
+  permission java.lang.RuntimePermission "accessDeclaredMembers";
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.util.locale.provider";
+  permission java.lang.RuntimePermission "getenv.NO_COLOR";
+  permission java.lang.RuntimePermission "getenv.CLICOLOR_FORCE";
+  permission java.lang.RuntimePermission "getenv.CLICOLOR";
+  permission java.lang.RuntimePermission "getenv.ConEmuANSI";
+  permission java.lang.RuntimePermission "getenv.ANSICON";
+  permission java.lang.RuntimePermission "setContextClassLoader";
+  permission java.lang.RuntimePermission "closeClassLoader";
+  permission java.lang.RuntimePermission "modifyThread";
+
+  permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.trace", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.converters.excludes", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.trimQuotes", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.color.commands", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.color.options", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.color.parameters", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.color.optionParams", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.usage.width", "read";
+  permission java.util.PropertyPermission "org.junit.platform.console.shadow.picocli.ansi", "read";
+  permission java.util.PropertyPermission "user.dir", "read";
+  permission java.util.PropertyPermission "java.class.path", "read";
+};
+

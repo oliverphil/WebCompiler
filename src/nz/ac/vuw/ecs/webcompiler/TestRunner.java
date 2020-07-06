@@ -53,14 +53,18 @@ public class TestRunner implements HttpRequestHandler {
     private boolean handleProcessInformation(HttpResponse httpResponse, Process proc, JsonObjectBuilder json, boolean compileTime) {
         BufferedReader stderr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 
-        List<String> errorList = stderr.lines().filter(a -> a.contains("error")).collect(Collectors.toList());
+        List<String> allErrors = stderr.lines().collect(Collectors.toList());
+        allErrors.forEach(s -> System.out.println(s));
+        List<String> errorList = allErrors.stream().filter(a -> a.contains("error")).collect(Collectors.toList());
         if (!errorList.isEmpty() && compileTime) {
             addListToJsonObject(errorList, json, "compileErrors");
             return false;
         }
 
         BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-        List<String> testResultList = stdout.lines().filter(a -> a.matches("^\\[\\W+\\d+\\Wtests.*\\]$")).collect(Collectors.toList());
+        List<String> allTestResultList = stdout.lines().collect(Collectors.toList());
+        allTestResultList.forEach(s -> System.out.println(s));
+        List<String> testResultList = allTestResultList.stream().filter(a -> a.matches("^\\[\\W+\\d+\\Wtests.*\\]$")).collect(Collectors.toList());
         if (!testResultList.isEmpty() && !compileTime) {
             addListToJsonObject(testResultList, json, "testResults");
         }
@@ -82,8 +86,10 @@ public class TestRunner implements HttpRequestHandler {
                     testFile.getPath()).start();
 
             if (handleProcessInformation(httpResponse, compile, jsonObjectBuilder, true)) {
-                Process runTests = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/java", "-jar", JUNIT_JAR_PATH, "--class-path",
-                        String.format("build/%s", sessionKey), "--scan-class-path", "-n", String.format("^.*?%sTests.*?$", challengeName)).start();
+                Process runTests = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/java", "-Djava.security.manager",
+                        "-Djava.security.policy=securitypolicy", "-jar", JUNIT_JAR_PATH, "--class-path",
+                        String.format("build/%s", sessionKey), "--scan-class-path", "-n", String.format("^.*?%sTests.*?$", challengeName))
+                        .start();
                 if (!runTests.waitFor(30, TimeUnit.SECONDS)) {
                     throw new TimeoutException("Tests timed out");
                 }

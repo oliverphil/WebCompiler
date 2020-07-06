@@ -15,6 +15,8 @@ import java.io.*;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 public class TestRunner implements HttpRequestHandler {
@@ -66,7 +68,7 @@ public class TestRunner implements HttpRequestHandler {
         return true;
     }
 
-    private void test(String sessionKey, String challengeName, HttpResponse httpResponse) {
+    private void test(String sessionKey, String challengeName, HttpResponse httpResponse) throws UnsupportedEncodingException {
         try {
             Map<String, String> env = System.getenv();
             File challengeDir = new File(String.format("build/%s/%s", sessionKey, challengeName));
@@ -82,13 +84,23 @@ public class TestRunner implements HttpRequestHandler {
             if (handleProcessInformation(httpResponse, compile, jsonObjectBuilder, true)) {
                 Process runTests = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/java", "-jar", JUNIT_JAR_PATH, "--class-path",
                         String.format("build/%s", sessionKey), "--scan-class-path", "-n", String.format("^.*?%sTests.*?$", challengeName)).start();
+                if (!runTests.waitFor(30, TimeUnit.SECONDS)) {
+                    throw new TimeoutException("Tests timed out");
+                }
                 handleProcessInformation(httpResponse, runTests, jsonObjectBuilder, false);
             }
 
             httpResponse.setEntity(new StringEntity(jsonObjectBuilder.build().toString()));
             httpResponse.setStatusCode(HttpStatus.SC_OK);
             return;
-        } catch(IOException e) {
+        } catch(TimeoutException e) {
+            e.printStackTrace();
+            httpResponse.setStatusCode(HttpStatus.SC_OK);
+            JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
+            jsonObjectBuilder.add("timeout", e.getMessage());
+            httpResponse.setEntity(new StringEntity(jsonObjectBuilder.build().toString()));
+            return;
+        } catch(IOException | InterruptedException e) {
             e.printStackTrace();
         }
 

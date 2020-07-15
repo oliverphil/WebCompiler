@@ -29,7 +29,7 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
         }
     }
 
-    private void post(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
+    private void post(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws IOException {
         HttpEntity entity = ((BasicHttpEntityEnclosingRequest) httpRequest).getEntity();
         String content = EntityUtils.toString(entity);
         JsonObject json = Json.createReader(new StringReader(content)).readObject();
@@ -44,6 +44,8 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
         String education = jsonObject.getString("education");
         String other_langs = jsonObject.getString("otherLanguages");
         String ide_experience = jsonObject.getString("ideExperience");
+
+        ServerLogger.getLogger().info(String.format("User: %s, Action: Add User To Database", id));
 
         try {
             Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
@@ -63,7 +65,7 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
             httpResponse.setStatusCode(HttpStatus.SC_OK);
             return;
         } catch (SQLException throwables) {
-            throwables.printStackTrace();
+            ServerLogger.getLogger().warning(throwables.toString());
         }
         httpResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
     }

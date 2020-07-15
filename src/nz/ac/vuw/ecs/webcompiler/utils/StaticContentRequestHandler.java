@@ -12,6 +12,7 @@ import org.apache.http.protocol.HttpRequestHandler;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Locale;
 
 public class StaticContentRequestHandler implements HttpRequestHandler {
@@ -28,30 +29,29 @@ public class StaticContentRequestHandler implements HttpRequestHandler {
     public void handle(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
         String requestMethod = httpRequest.getRequestLine().getMethod().toUpperCase(Locale.ROOT);
         if (requestMethod.equals("GET")) {
-            get(httpRequest, httpResponse, httpContext);
+            try {
+                get(httpRequest, httpResponse, httpContext);
+            } catch (URISyntaxException e) {
+                ServerLogger.getLogger().warning(e.toString());
+            }
         } else {
             httpResponse.setStatusCode(HttpStatus.SC_BAD_REQUEST);
         }
     }
 
-    private void get(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
-        try {
-            String uri = httpRequest.getRequestLine().getUri();
-            String path = new URIBuilder(uri).getPath();
+    private void get(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws URISyntaxException {
+        String uri = httpRequest.getRequestLine().getUri();
+        String path = new URIBuilder(uri).getPath();
 
-            path = "webcompiler-frontend/dist/WebCompilerFrontend" + path;
+        path = "webcompiler-frontend/dist/WebCompilerFrontend" + path;
 
-            File file = new File(".", path);
-            System.out.println(file);
-            httpResponse.setStatusCode(HttpStatus.SC_OK);
+        File file = new File(".", path);
+        System.out.println(file);
+        httpResponse.setStatusCode(HttpStatus.SC_OK);
 
-            if (this.contentType != null)
-                httpResponse.setEntity(new FileEntity(file, this.contentType));
-            else
-                httpResponse.setEntity(new FileEntity(file, ContentType.DEFAULT_TEXT));
-        } catch (Exception e) {
-            e.printStackTrace();
-            httpResponse.setStatusCode(HttpStatus.SC_BAD_REQUEST);
-        }
+        if (this.contentType != null)
+            httpResponse.setEntity(new FileEntity(file, this.contentType));
+        else
+            httpResponse.setEntity(new FileEntity(file, ContentType.DEFAULT_TEXT));
     }
 }

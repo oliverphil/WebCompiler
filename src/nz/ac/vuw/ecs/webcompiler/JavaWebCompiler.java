@@ -1,7 +1,11 @@
 package nz.ac.vuw.ecs.webcompiler;
 
+import nz.ac.vuw.ecs.webcompiler.utils.ServerLogger;
 import org.apache.commons.io.FileUtils;
-import org.apache.http.*;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.protocol.HttpContext;
@@ -19,24 +23,24 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 public class JavaWebCompiler implements HttpRequestHandler {
 
     @Override
-    public void handle(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
+    public void handle(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws IOException {
         String requestMethod = httpRequest.getRequestLine().getMethod().toUpperCase(Locale.ROOT);
         if (requestMethod.equals("POST")) {
             post(httpRequest, httpResponse, httpContext);
         } else if(requestMethod.equals("OPTIONS")) {
             httpResponse.setStatusCode(HttpStatus.SC_OK);
-        }else {
+        } else {
             httpResponse.setStatusCode(HttpStatus.SC_BAD_REQUEST);
         }
-        httpResponse.addHeader("Access-Control-Allow-Origin", "http://localhost:4200");
     }
 
-    private void post(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
+    private void post(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws IOException {
         HttpEntity entity = ((BasicHttpEntityEnclosingRequest) httpRequest).getEntity();
         String content = EntityUtils.toString(entity);
         JsonObject json = Json.createReader(new StringReader(content)).readObject();
@@ -49,6 +53,8 @@ public class JavaWebCompiler implements HttpRequestHandler {
     }
 
     private void compile(String content, String sessionKey, String challengeName, HttpResponse response) {
+        Logger logger = ServerLogger.getLogger();
+        logger.info(String.format("User: %s, Challenge: %s, Action: Compile", sessionKey, challengeName));
         try {
             File challengeDir = createRequiredFolders(sessionKey, challengeName);
             File challengeFile = new File(String.format("%s/%s.java", challengeDir.getPath(), challengeName));
@@ -61,7 +67,6 @@ public class JavaWebCompiler implements HttpRequestHandler {
                 fileContent = String.format("%s\n%s", importsString, fileContent);
             }
             fileContent = String.format("package %s;\n%s", challengeName, fileContent);
-            System.out.println(fileContent);
             writer.write(fileContent);
             writer.close();
 
@@ -100,7 +105,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
             response.setEntity(new StringEntity(jsonResponse));
             return;
         } catch(IOException e) {
-            e.printStackTrace();
+            logger.warning(e.toString());
         }
 
         response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
@@ -109,6 +114,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
     private void addToDatabase(Stream<String> stream, String user_id, String code) {
         Runnable r = () -> {
             try {
+                ServerLogger.getLogger().info(String.format("User: %s, Action: Add Compilation To Database", user_id));
                 Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
                 Timestamp timestamp = Timestamp.from(Instant.now());
                 PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO compile_request" +
@@ -122,7 +128,6 @@ public class JavaWebCompiler implements HttpRequestHandler {
                 insertCodeStmt.executeUpdate();
 
                 stream.filter(s -> s.contains("Flag")).forEach(s -> {
-                    System.out.println(s);
                     String[] flagData = s.split("[-:]");
                     String flagName = flagData[1].strip();
                     boolean flagResult = flagData[2].strip().equals("Complete") ? true : false;
@@ -134,26 +139,25 @@ public class JavaWebCompiler implements HttpRequestHandler {
                         insertFlagStmt.setBoolean(4, flagResult);
                         insertFlagStmt.executeUpdate();
                     } catch (SQLException throwables) {
-                        throwables.printStackTrace();
+                        ServerLogger.getLogger().warning(throwables.toString());
                     }
                 });
             } catch (SQLException throwables) {
-                throwables.printStackTrace();
+                ServerLogger.getLogger().warning(throwables.toString());
             }
         };
         r.run();
     }
 
     private File createRequiredFolders(String sessionKey, String challengeName) throws IOException {
-        File buildFolder = new File("build");
         File sessionFolder = new File("build/" + sessionKey);
-        if (!sessionFolder.exists()) {
-            sessionFolder.mkdir();
-        }
         File challenges = new File("coding-challenges/challenges");
         assert challenges.exists();
-
-        FileUtils.copyDirectory(challenges, sessionFolder);
+        if (!sessionFolder.exists()) {
+            ServerLogger.getLogger().info(String.format("User: %s, Action: Create Folders", sessionKey));
+            sessionFolder.mkdir();
+            FileUtils.copyDirectory(challenges, sessionFolder);
+        }
 
         File challengeFolder = new File(String.format("build/%s/%s", sessionKey, challengeName));
         return challengeFolder;

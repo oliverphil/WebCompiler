@@ -1,9 +1,6 @@
 package nz.ac.vuw.ecs.webcompiler;
 
-import nz.ac.vuw.ecs.webcompiler.utils.CodingChallengesRequestHandler;
-import nz.ac.vuw.ecs.webcompiler.utils.HomePage;
-import nz.ac.vuw.ecs.webcompiler.utils.MarkdownImageRequestHandler;
-import nz.ac.vuw.ecs.webcompiler.utils.StaticContentRequestHandler;
+import nz.ac.vuw.ecs.webcompiler.utils.*;
 import org.apache.http.ExceptionLogger;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
@@ -15,6 +12,8 @@ import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
+
+    public static final String DATABASE_CONN_STRING = "jdbc:postgresql://localhost:5432/incremental_workloads";
 
     public static final ContentType TEXT_JAVASCRIPT = ContentType.create("text/javascript");
     public static final ContentType TEXT_CSS = ContentType.create("text/css");
@@ -32,7 +31,8 @@ public class Main {
         }
     }
 
-    public static HttpServer startWebServer() throws IOException {
+    public static HttpServer startWebServer() throws IOException, ClassNotFoundException {
+        Class.forName("org.postgresql.Driver");
         SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(20*1000).build();
 
         HttpServer server = ServerBootstrap.bootstrap().setListenerPort(9100).setSocketConfig(socketConfig)
@@ -47,6 +47,7 @@ public class Main {
                 .registerHandler("/challenges", new CodingChallengesRequestHandler())
                 .registerHandler("*.png", new MarkdownImageRequestHandler())
                 .registerHandler("/test", new TestRunner())
+                .registerHandler("/storeUser", new UserInformationStorageHandler())
                 .create();
 
         return server;

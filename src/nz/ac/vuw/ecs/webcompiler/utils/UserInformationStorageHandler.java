@@ -42,7 +42,7 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
         String occupation = jsonObject.getString("occupation");
         String java_experience = jsonObject.getString("javaExperience");
         String education = jsonObject.getString("education");
-        String other_langs = jsonObject.getString("otherLangs");
+        String other_langs = jsonObject.getString("otherLanguages");
         String ide_experience = jsonObject.getString("ideExperience");
 
         try {

@@ -13,10 +13,13 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 import java.io.*;
+import java.sql.*;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 public class JavaWebCompiler implements HttpRequestHandler {
 
@@ -66,7 +69,8 @@ public class JavaWebCompiler implements HttpRequestHandler {
             Process p = builder.command("jdk-langtools/build/langtools/bin/javac", challengeFile.getPath()).start();
             BufferedReader stderr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             BufferedReader stdout = new BufferedReader(new InputStreamReader(p.getInputStream()));
-            System.out.println(stdout.lines().reduce((a, b) -> a + "\n" + b).get());
+
+            this.addToDatabase(stdout.lines(), sessionKey, content);
 
             Set<String> errorLines = new HashSet<>();
 
@@ -100,6 +104,44 @@ public class JavaWebCompiler implements HttpRequestHandler {
         }
 
         response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
+    }
+
+    private void addToDatabase(Stream<String> stream, String user_id, String code) {
+        Runnable r = () -> {
+            try {
+                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
+                Timestamp timestamp = Timestamp.from(Instant.now());
+                PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO compile_request" +
+                        "(timestamp, user_id, code) VALUES (?, ?, ?);");
+                PreparedStatement insertFlagStmt = db.prepareStatement("INSERT INTO compile_result" +
+                        "(timestamp, user_id, compilation_flag, flag_result) VALUES (?, ?, ?, ?);");
+
+                insertCodeStmt.setTimestamp(1, timestamp);
+                insertCodeStmt.setString(2, user_id);
+                insertCodeStmt.setString(3, code);
+                insertCodeStmt.executeUpdate();
+
+                stream.filter(s -> s.contains("Flag")).forEach(s -> {
+                    System.out.println(s);
+                    String[] flagData = s.split("[-:]");
+                    String flagName = flagData[1].strip();
+                    boolean flagResult = flagData[2].strip().equals("Complete") ? true : false;
+
+                    try {
+                        insertFlagStmt.setTimestamp(1, timestamp);
+                        insertFlagStmt.setString(2, user_id);
+                        insertFlagStmt.setString(3, flagName);
+                        insertFlagStmt.setBoolean(4, flagResult);
+                        insertFlagStmt.executeUpdate();
+                    } catch (SQLException throwables) {
+                        throwables.printStackTrace();
+                    }
+                });
+            } catch (SQLException throwables) {
+                throwables.printStackTrace();
+            }
+        };
+        r.run();
     }
 
     private File createRequiredFolders(String sessionKey, String challengeName) throws IOException {

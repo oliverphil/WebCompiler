@@ -1,5 +1,6 @@
 package nz.ac.vuw.ecs.webcompiler;
 
+import nz.ac.vuw.ecs.webcompiler.utils.ServerLogger;
 import org.apache.http.*;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
@@ -24,7 +25,7 @@ public class TestRunner implements HttpRequestHandler {
     private static final String JUNIT_JAR_PATH = "jdk-langtools/build/junit-platform-console-standalone-1.7.0-M1.jar";
 
     @Override
-    public void handle(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws HttpException, IOException {
+    public void handle(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws IOException {
         String requestMethod = httpRequest.getRequestLine().getMethod().toUpperCase(Locale.ROOT);
         if (requestMethod.equals("POST")) {
             post(httpRequest, httpResponse);
@@ -33,7 +34,7 @@ public class TestRunner implements HttpRequestHandler {
         }
     }
 
-    private void post(HttpRequest httpRequest, HttpResponse httpResponse) throws HttpException, IOException {
+    private void post(HttpRequest httpRequest, HttpResponse httpResponse) throws IOException {
         HttpEntity entity = ((BasicHttpEntityEnclosingRequest) httpRequest).getEntity();
         String content = EntityUtils.toString(entity);
         JsonObject json = Json.createReader(new StringReader(content)).readObject();
@@ -54,7 +55,6 @@ public class TestRunner implements HttpRequestHandler {
         BufferedReader stderr = new BufferedReader(new InputStreamReader(proc.getErrorStream()));
 
         List<String> allErrors = stderr.lines().collect(Collectors.toList());
-        allErrors.forEach(s -> System.out.println(s));
         List<String> errorList = allErrors.stream().filter(a -> a.contains("error")).collect(Collectors.toList());
         if (!errorList.isEmpty() && compileTime) {
             addListToJsonObject(errorList, json, "compileErrors");
@@ -63,7 +63,6 @@ public class TestRunner implements HttpRequestHandler {
 
         BufferedReader stdout = new BufferedReader(new InputStreamReader(proc.getInputStream()));
         List<String> allTestResultList = stdout.lines().collect(Collectors.toList());
-        allTestResultList.forEach(s -> System.out.println(s));
         List<String> testResultList = allTestResultList.stream().filter(a -> a.matches("^\\[\\W+\\d+\\Wtests.*\\]$")).collect(Collectors.toList());
         if (!testResultList.isEmpty() && !compileTime) {
             addListToJsonObject(testResultList, json, "testResults");
@@ -74,6 +73,7 @@ public class TestRunner implements HttpRequestHandler {
 
     private void test(String sessionKey, String challengeName, HttpResponse httpResponse) throws UnsupportedEncodingException {
         try {
+            ServerLogger.getLogger().info(String.format("User: %s, Challenge: %s, Action: Run Tests", sessionKey, challengeName));
             Map<String, String> env = System.getenv();
             File challengeDir = new File(String.format("build/%s/%s", sessionKey, challengeName));
             File testFile = new File(String.format("%s/%sTests.java", challengeDir.getPath(), challengeName));
@@ -100,14 +100,14 @@ public class TestRunner implements HttpRequestHandler {
             httpResponse.setStatusCode(HttpStatus.SC_OK);
             return;
         } catch(TimeoutException e) {
-            e.printStackTrace();
+            ServerLogger.getLogger().info(String.format("User: %s timeout on %s", sessionKey, challengeName));
             httpResponse.setStatusCode(HttpStatus.SC_OK);
             JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
             jsonObjectBuilder.add("timeout", e.getMessage());
             httpResponse.setEntity(new StringEntity(jsonObjectBuilder.build().toString()));
             return;
         } catch(IOException | InterruptedException e) {
-            e.printStackTrace();
+            ServerLogger.getLogger().warning(e.toString());
         }
 
         httpResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);

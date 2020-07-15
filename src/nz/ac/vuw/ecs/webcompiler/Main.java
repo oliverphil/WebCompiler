@@ -1,7 +1,6 @@
 package nz.ac.vuw.ecs.webcompiler;
 
 import nz.ac.vuw.ecs.webcompiler.utils.*;
-import org.apache.http.ExceptionLogger;
 import org.apache.http.config.SocketConfig;
 import org.apache.http.entity.ContentType;
 import org.apache.http.impl.NoConnectionReuseStrategy;
@@ -31,13 +30,15 @@ public class Main {
         }
     }
 
-    public static HttpServer startWebServer() throws IOException, ClassNotFoundException {
+    public static HttpServer startWebServer() throws ClassNotFoundException {
         Class.forName("org.postgresql.Driver");
         SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(20*1000).build();
 
+        ServerLogger logger = ServerLogger.setup();
+
         HttpServer server = ServerBootstrap.bootstrap().setListenerPort(9100).setSocketConfig(socketConfig)
-                .setExceptionLogger(ExceptionLogger.STD_ERR)
                 .setConnectionReuseStrategy(new NoConnectionReuseStrategy())
+                .setExceptionLogger(logger)
                 .registerHandler("*.html", new StaticContentRequestHandler(TEXT_HTML))
                 .registerHandler("*.js", new StaticContentRequestHandler(TEXT_JAVASCRIPT))
                 .registerHandler("*.css", new StaticContentRequestHandler(TEXT_CSS))

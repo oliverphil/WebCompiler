@@ -14,10 +14,7 @@ import org.commonmark.renderer.html.HtmlRenderer;
 import javax.json.Json;
 import javax.json.JsonArrayBuilder;
 import javax.json.JsonObjectBuilder;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -33,42 +30,37 @@ public class CodingChallengesRequestHandler implements HttpRequestHandler {
         }
     }
 
-    private void getAllChallenges(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) {
-        try {
-            File challengesFolder = new File(".", "coding-challenges/challenges");
-            File[] challenges = challengesFolder.listFiles();
+    private void getAllChallenges(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws FileNotFoundException, UnsupportedEncodingException {
+        File challengesFolder = new File(".", "coding-challenges/challenges");
+        File[] challenges = challengesFolder.listFiles();
 
-            JsonArrayBuilder jsonChallenges = Json.createArrayBuilder();
-            Parser parser = Parser.builder().build();
-            HtmlRenderer renderer = HtmlRenderer.builder().build();
+        JsonArrayBuilder jsonChallenges = Json.createArrayBuilder();
+        Parser parser = Parser.builder().build();
+        HtmlRenderer renderer = HtmlRenderer.builder().build();
 
-            for (File challenge : challenges) {
-                String challengeName = challenge.getName();
-                File[] skeletonCode = challenge.listFiles((dir, name) -> name.contains(".java") && !name.contains("Tests"));
-                File[] instructions = challenge.listFiles(((dir, name) -> name.contains(".md")));
+        for (File challenge : challenges) {
+            String challengeName = challenge.getName();
+            File[] skeletonCode = challenge.listFiles((dir, name) -> name.contains(".java") && !name.contains("Tests"));
+            File[] instructions = challenge.listFiles(((dir, name) -> name.contains(".md")));
 
-                JsonObjectBuilder jsonChallenge = Json.createObjectBuilder();
-                jsonChallenge.add("challengeName", challengeName);
-                Optional<String> code = new BufferedReader(new FileReader(skeletonCode[0])).lines().reduce((a, b) -> a + "\n" + b);
-                String codeString = code.isEmpty() ? "" : code.get();
-                jsonChallenge.add("starterCode", codeString);
+            JsonObjectBuilder jsonChallenge = Json.createObjectBuilder();
+            jsonChallenge.add("challengeName", challengeName);
+            Optional<String> code = new BufferedReader(new FileReader(skeletonCode[0])).lines().reduce((a, b) -> a + "\n" + b);
+            String codeString = code.isEmpty() ? "" : code.get();
+            jsonChallenge.add("starterCode", codeString);
 
-                String markdown = new BufferedReader(new FileReader(instructions[0])).lines().reduce((a, b) -> a + "\n" + b).get();
-                Node markdownDoc = parser.parse(markdown);
-                String htmlInstructions = renderer.render(markdownDoc);
-                jsonChallenge.add("instructions", htmlInstructions);
+            String markdown = new BufferedReader(new FileReader(instructions[0])).lines().reduce((a, b) -> a + "\n" + b).get();
+            Node markdownDoc = parser.parse(markdown);
+            String htmlInstructions = renderer.render(markdownDoc);
+            jsonChallenge.add("instructions", htmlInstructions);
 
-                jsonChallenges.add(jsonChallenge);
-            }
-
-            String jsonResponse = jsonChallenges.build().toString();
-
-            httpResponse.setStatusCode(HttpStatus.SC_OK);
-            httpResponse.addHeader("Content-Type", "application/json");
-            httpResponse.setEntity(new StringEntity(jsonResponse));
-        } catch (Exception e) {
-            e.printStackTrace();
-            httpResponse.setStatusCode(HttpStatus.SC_BAD_REQUEST);
+            jsonChallenges.add(jsonChallenge);
         }
+
+        String jsonResponse = jsonChallenges.build().toString();
+
+        httpResponse.setStatusCode(HttpStatus.SC_OK);
+        httpResponse.addHeader("Content-Type", "application/json");
+        httpResponse.setEntity(new StringEntity(jsonResponse));
     }
 }

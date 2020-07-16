@@ -86,11 +86,18 @@ public class JavaWebCompiler implements HttpRequestHandler {
             } else {
                 result = stderrLines.get();
                 String[] lines = result.split("\n");
-                for (String s: lines) {
+                for (int i = 0; i < lines.length; i++) {
+                    String s = lines[i];
                     if (!s.contains(".java:")) continue;
+
                     String[] arr = s.split(":");
-                    errorLines.add(arr[1]);
+                    String lineNumber = Integer.toString(Integer.parseInt(arr[1]) - 1);
+                    arr[1] = lineNumber;
+                    errorLines.add(lineNumber);
+                    arr[0] = arr[0].split("/")[3];
+                    lines[i] = String.join(":", arr);
                 }
+                result = String.join("\n", lines);
             }
 
             JsonArrayBuilder jsonArrayBuilder = Json.createArrayBuilder(errorLines);

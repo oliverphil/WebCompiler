@@ -3,7 +3,12 @@ package nz.ac.vuw.ecs.webcompiler.utils;
 import org.apache.http.ExceptionLogger;
 
 import java.io.IOException;
-import java.util.logging.*;
+import java.util.Arrays;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.logging.SimpleFormatter;
+import java.util.stream.Stream;
 
 public class ServerLogger implements ExceptionLogger {
 
@@ -29,6 +34,9 @@ public class ServerLogger implements ExceptionLogger {
 
     @Override
     public void log(Exception e) {
-        logger.warning(e.toString());
+        String log = Arrays.stream(e.getStackTrace())
+                .flatMap(a -> Stream.of(a.toString()))
+                .reduce((a, b) -> a + "\n\t" + b).get();
+        logger.warning(log);
     }
 }

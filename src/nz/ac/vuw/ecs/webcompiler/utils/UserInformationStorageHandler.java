@@ -9,6 +9,7 @@ import org.apache.http.util.EntityUtils;
 
 import javax.json.Json;
 import javax.json.JsonObject;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.sql.Connection;
@@ -24,9 +25,34 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
         String requestMethod = httpRequest.getRequestLine().getMethod().toUpperCase(Locale.ROOT);
         if (requestMethod.equals("POST")) {
             post(httpRequest, httpResponse, httpContext);
+        } else if (requestMethod.equals("DELETE")) {
+            delete(httpRequest, httpResponse, httpContext);
         } else {
             httpResponse.setStatusCode(HttpStatus.SC_BAD_REQUEST);
         }
+    }
+
+    private void delete(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws IOException {
+        String id = httpRequest.getFirstHeader("id").getValue();
+        deleteUser(httpResponse, id);
+    }
+
+    private void deleteUser(HttpResponse httpResponse, String id) {
+        ServerLogger.getLogger().info(String.format("User: %s, Action: Delete Folder", id));
+        File f = new File(String.format("build/%s", id));
+        if (f.exists()) {
+            deleteFolders(f);
+        }
+        httpResponse.setStatusCode(HttpStatus.SC_OK);
+    }
+
+    private void deleteFolders(File file) {
+        if (file.isDirectory()) {
+            for(File f: file.listFiles()) {
+                deleteFolders(f);
+            }
+        }
+        file.delete();
     }
 
     private void post(HttpRequest httpRequest, HttpResponse httpResponse, HttpContext httpContext) throws IOException {

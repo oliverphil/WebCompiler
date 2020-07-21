@@ -20,7 +20,7 @@
     <target name="build" depends="install">
         <exec executable="npm" failonerror="true">
             <arg value="run" />
-            <arg value="build" />
+            <arg value="build-prod" />
             <arg value="--prefix" />
             <arg value="webcompiler-frontend" />
         </exec>
@@ -44,7 +44,7 @@
     </target>
 
     <target name="run-prod" depends="build">
-        <java classname="nz.ac.vuw.ecs.webcompiler.Main" fork="true">
+        <java classname="nz.ac.vuw.ecs.webcompiler.Main" fork="true" spawn="true">
             <classpath>
                 <pathelement location="build/classes"/>
                 <path refid="MAVEN_DEPS"/>

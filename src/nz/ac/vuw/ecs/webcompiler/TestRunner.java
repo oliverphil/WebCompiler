@@ -81,12 +81,12 @@ public class TestRunner implements HttpRequestHandler {
 
             JsonObjectBuilder jsonObjectBuilder = Json.createObjectBuilder();
 
-            Process compile = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/javac", "-Xlint:none", "-cp",
+            Process compile = builder.command("jdk-langtools/build/langtools/bin/javac", "-Xlint:none", "-cp",
                     String.format("%s:build/%s", JUNIT_JAR_PATH, sessionKey),
                     testFile.getPath()).start();
 
             if (handleProcessInformation(httpResponse, compile, jsonObjectBuilder, true)) {
-                Process runTests = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/java", "-Djava.security.manager",
+                Process runTests = builder.command("jdk-langtools/build/release/jdk/bin/java", "-Djava.security.manager",
                         "-Djava.security.policy=securitypolicy", "-jar", JUNIT_JAR_PATH, "--class-path",
                         String.format("build/%s", sessionKey), "--scan-class-path", "-n", String.format("^.*?%sTests.*?$", challengeName))
                         .start();

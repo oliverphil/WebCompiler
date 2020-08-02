@@ -75,7 +75,9 @@ public class JavaWebCompiler implements HttpRequestHandler {
             BufferedReader stderr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             BufferedReader stdout = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
-            this.addToDatabase(stdout.lines(), sessionKey, content);
+            Timestamp timestamp = Timestamp.from(Instant.now());
+
+            this.addToDatabase(stdout.lines(), sessionKey, content, challengeName, timestamp);
 
             Set<String> errorLines = new HashSet<>();
 
@@ -105,6 +107,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
             JsonObjectBuilder jsonBuilder = Json.createObjectBuilder();
             jsonBuilder.add("compileResult", result);
             jsonBuilder.add("errorLines", jsonArrayBuilder);
+            jsonBuilder.add("timestamp", timestamp.toString());
             String jsonResponse = jsonBuilder.build().toString();
 
             response.setStatusCode(HttpStatus.SC_OK);
@@ -118,20 +121,21 @@ public class JavaWebCompiler implements HttpRequestHandler {
         response.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
     }
 
-    private void addToDatabase(Stream<String> stream, String user_id, String code) {
+    private void addToDatabase(Stream<String> stream, String user_id, String code, String challengeName, Timestamp timestamp) {
         Runnable r = () -> {
             try {
                 ServerLogger.getLogger().info(String.format("User: %s, Action: Add Compilation To Database", user_id));
                 Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
-                Timestamp timestamp = Timestamp.from(Instant.now());
+
                 PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO compile_request" +
-                        "(timestamp, user_id, code) VALUES (?, ?, ?);");
+                        "(timestamp, user_id, code, challenge) VALUES (?, ?, ?, ?);");
                 PreparedStatement insertFlagStmt = db.prepareStatement("INSERT INTO compile_result" +
-                        "(timestamp, user_id, compilation_flag, flag_result) VALUES (?, ?, ?, ?);");
+                        "(timestamp, user_id, compilation_flag, flag_result, challenge) VALUES (?, ?, ?, ?, ?);");
 
                 insertCodeStmt.setTimestamp(1, timestamp);
                 insertCodeStmt.setString(2, user_id);
                 insertCodeStmt.setString(3, code);
+                insertCodeStmt.setString(4, challengeName);
                 insertCodeStmt.executeUpdate();
 
                 stream.filter(s -> s.contains("Flag")).forEach(s -> {
@@ -144,6 +148,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
                         insertFlagStmt.setString(2, user_id);
                         insertFlagStmt.setString(3, flagName);
                         insertFlagStmt.setBoolean(4, flagResult);
+                        insertFlagStmt.setString(5, challengeName);
                         insertFlagStmt.executeUpdate();
                     } catch (SQLException throwables) {
                         ServerLogger.getLogger().warning(throwables.toString());

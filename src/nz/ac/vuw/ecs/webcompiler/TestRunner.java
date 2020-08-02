@@ -1,23 +1,25 @@
 package nz.ac.vuw.ecs.webcompiler;
 
 import nz.ac.vuw.ecs.webcompiler.utils.ServerLogger;
-import org.apache.http.*;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpRequest;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpStatus;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.message.BasicHttpEntityEnclosingRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.http.protocol.HttpRequestHandler;
 import org.apache.http.util.EntityUtils;
 
-import javax.json.Json;
-import javax.json.JsonArrayBuilder;
-import javax.json.JsonObject;
-import javax.json.JsonObjectBuilder;
+import javax.json.*;
 import java.io.*;
+import java.sql.*;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class TestRunner implements HttpRequestHandler {
@@ -40,8 +42,9 @@ public class TestRunner implements HttpRequestHandler {
         JsonObject json = Json.createReader(new StringReader(content)).readObject();
         String sessionKey = json.getString("sessionKey");
         String challengeName = json.getString("challengeName");
+        Timestamp timestamp = Timestamp.valueOf(json.getString("compileTimestamp"));
         if (!challengeName.isEmpty() && !sessionKey.isEmpty()) {
-            test(sessionKey, challengeName, httpResponse);
+            test(sessionKey, challengeName, timestamp, httpResponse);
         }
     }
 
@@ -71,7 +74,49 @@ public class TestRunner implements HttpRequestHandler {
         return true;
     }
 
-    private void test(String sessionKey, String challengeName, HttpResponse httpResponse) throws UnsupportedEncodingException {
+    private void saveRunToDatabase(String user_id, String challengeName, Timestamp timestamp, JsonObject json) {
+        Runnable r = () -> {
+            try {
+                ServerLogger.getLogger().info(String.format("User: %s, Action: Add Test Run To Database", user_id));
+                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
+
+                PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO test_result" +
+                        "(timestamp, user_id, challenge, test_result) VALUES (?, ?, ?, ?);");
+
+                String results = "error";
+                if (json.containsKey("compileErrors")) {
+                    ServerLogger.getLogger().info(String.format("User: %s, Details: Test Compilation Failed", user_id));
+                } else {
+                    JsonArray testResults = json.getJsonArray("testResults");
+                    AtomicInteger totalTests = new AtomicInteger();
+                    AtomicInteger passedTests = new AtomicInteger();
+                    testResults.stream().filter(o -> o.toString().contains("successful") || o.toString().contains("found"))
+                            .forEach(o -> {
+                        String[] arr = o.toString().split(" ");
+                        String num = arr[9];
+                        if (o.toString().contains("successful")) {
+                            passedTests.set(Integer.parseInt(num));
+                        } else {
+                            totalTests.set(Integer.parseInt(num));
+                        }
+                    });
+                    results = String.format("%d/%d", passedTests.get(), totalTests.get());
+                }
+
+                insertCodeStmt.setTimestamp(1, timestamp);
+                insertCodeStmt.setString(2, user_id);
+                insertCodeStmt.setString(3, challengeName);
+                insertCodeStmt.setString(4, results);
+                insertCodeStmt.executeUpdate();
+
+            } catch (SQLException throwables) {
+                ServerLogger.getLogger().warning(throwables.toString());
+            }
+        };
+        r.run();
+    }
+
+    private void test(String sessionKey, String challengeName, Timestamp timestamp, HttpResponse httpResponse) throws UnsupportedEncodingException {
         try {
             ServerLogger.getLogger().info(String.format("User: %s, Challenge: %s, Action: Run Tests", sessionKey, challengeName));
             Map<String, String> env = System.getenv();
@@ -86,7 +131,8 @@ public class TestRunner implements HttpRequestHandler {
                     testFile.getPath()).start();
 
             if (handleProcessInformation(httpResponse, compile, jsonObjectBuilder, true)) {
-                Process runTests = builder.command("jdk-langtools/build/release/jdk/bin/java", "-Djava.security.manager",
+//                Process runTests = builder.command("jdk-langtools/build/release/jdk/bin/java", "-Djava.security.manager",
+                Process runTests = builder.command(env.get("JAVAC_JDK_ROOT") + "/bin/java", "-Djava.security.manager",
                         "-Djava.security.policy=securitypolicy", "-jar", JUNIT_JAR_PATH, "--class-path",
                         String.format("build/%s", sessionKey), "--scan-class-path", "-n", String.format("^.*?%sTests.*?$", challengeName))
                         .start();
@@ -96,7 +142,10 @@ public class TestRunner implements HttpRequestHandler {
                 handleProcessInformation(httpResponse, runTests, jsonObjectBuilder, false);
             }
 
-            httpResponse.setEntity(new StringEntity(jsonObjectBuilder.build().toString()));
+            JsonObject json = jsonObjectBuilder.build();
+            saveRunToDatabase(sessionKey, challengeName, timestamp, json);
+
+            httpResponse.setEntity(new StringEntity(json.toString()));
             httpResponse.setStatusCode(HttpStatus.SC_OK);
             return;
         } catch(TimeoutException e) {

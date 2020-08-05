@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -138,10 +139,19 @@ public class JavaWebCompiler implements HttpRequestHandler {
                 insertCodeStmt.setString(4, challengeName);
                 insertCodeStmt.executeUpdate();
 
-                stream.filter(s -> s.contains("Flag")).forEach(s -> {
+                AtomicBoolean typeCheckPass = new AtomicBoolean(true);
+                AtomicBoolean nameResPass = new AtomicBoolean(true);
+
+                stream.filter(s -> s.contains("Flag")).distinct().forEach(s -> {
                     String[] flagData = s.split("[-:]");
                     String flagName = flagData[1].strip();
                     boolean flagResult = flagData[2].strip().equals("Complete") ? true : false;
+
+                    if (flagName.equals("Type Checking") && !flagResult) typeCheckPass.set(false);
+                    else if (flagName.equals("Type Checking")) return;
+
+                    if (flagName.equals("Name Resolution") && !flagResult) nameResPass.set(false);
+                    else if (flagName.equals("Name Resolution")) return;
 
                     try {
                         insertFlagStmt.setTimestamp(1, timestamp);
@@ -154,6 +164,31 @@ public class JavaWebCompiler implements HttpRequestHandler {
                         ServerLogger.getLogger().warning(throwables.toString());
                     }
                 });
+
+                if (typeCheckPass.get()) {
+                    try {
+                        insertFlagStmt.setTimestamp(1, timestamp);
+                        insertFlagStmt.setString(2, user_id);
+                        insertFlagStmt.setString(3, "Type Checking");
+                        insertFlagStmt.setBoolean(4, true);
+                        insertFlagStmt.setString(5, challengeName);
+                        insertFlagStmt.executeUpdate();
+                    } catch (SQLException throwables) {
+                        ServerLogger.getLogger().warning(throwables.toString());
+                    }
+                }
+                if (nameResPass.get()) {
+                    try {
+                        insertFlagStmt.setTimestamp(1, timestamp);
+                        insertFlagStmt.setString(2, user_id);
+                        insertFlagStmt.setString(3, "Name Resolution");
+                        insertFlagStmt.setBoolean(4, true);
+                        insertFlagStmt.setString(5, challengeName);
+                        insertFlagStmt.executeUpdate();
+                    } catch (SQLException throwables) {
+                        ServerLogger.getLogger().warning(throwables.toString());
+                    }
+                }
             } catch (SQLException throwables) {
                 ServerLogger.getLogger().warning(throwables.toString());
             }

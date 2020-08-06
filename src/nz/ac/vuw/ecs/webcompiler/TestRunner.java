@@ -14,6 +14,7 @@ import org.apache.http.util.EntityUtils;
 import javax.json.*;
 import java.io.*;
 import java.sql.*;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -21,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestRunner implements HttpRequestHandler {
 
@@ -90,11 +92,12 @@ public class TestRunner implements HttpRequestHandler {
                     JsonArray testResults = json.getJsonArray("testResults");
                     AtomicInteger totalTests = new AtomicInteger();
                     AtomicInteger passedTests = new AtomicInteger();
-                    testResults.stream().filter(o -> o.toString().contains("successful") || o.toString().contains("found"))
+                    testResults.stream().flatMap(o -> Stream.of(o.toString())).filter(o -> o.contains("successful") || o.contains("found"))
                             .forEach(o -> {
-                        String[] arr = o.toString().split(" ");
-                        String num = arr[9];
-                        if (o.toString().contains("successful")) {
+                        List<String> strs = Arrays.stream(o.split(" "))
+                                .filter(s -> !s.equals("")).collect(Collectors.toList());
+                        String num = strs.get(1);
+                        if (o.contains("successful")) {
                             passedTests.set(Integer.parseInt(num));
                         } else {
                             totalTests.set(Integer.parseInt(num));

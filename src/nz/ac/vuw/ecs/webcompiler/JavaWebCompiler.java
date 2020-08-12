@@ -59,6 +59,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
         try {
             File challengeDir = createRequiredFolders(sessionKey, challengeName);
             File challengeFile = new File(String.format("%s/%s.java", challengeDir.getPath(), challengeName));
+            File compileTestFile = new File(String.format("%s/%sCompileTests.java", challengeDir.getPath(), challengeName));
             FileWriter writer = new FileWriter(challengeFile);
             File imports = new File(String.format("%s/imports.txt", challengeDir.getPath()));
 
@@ -72,7 +73,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
             writer.close();
 
             ProcessBuilder builder = new ProcessBuilder();
-            Process p = builder.command("jdk-langtools/build/langtools/bin/javac", challengeFile.getPath()).start();
+            Process p = builder.command("jdk-langtools/build/langtools/bin/javac", challengeFile.getPath(), compileTestFile.getPath()).start();
             BufferedReader stderr = new BufferedReader(new InputStreamReader(p.getErrorStream()));
             BufferedReader stdout = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
@@ -96,7 +97,9 @@ public class JavaWebCompiler implements HttpRequestHandler {
                     String[] arr = s.split(":");
                     String lineNumber = Integer.toString(Integer.parseInt(arr[1]) - 1);
                     arr[1] = lineNumber;
-                    errorLines.add(lineNumber);
+                    if (!s.contains("Tests.java")) {
+                        errorLines.add(lineNumber);
+                    }
                     arr[0] = arr[0].split("/")[3];
                     lines[i] = String.join(":", arr);
                 }

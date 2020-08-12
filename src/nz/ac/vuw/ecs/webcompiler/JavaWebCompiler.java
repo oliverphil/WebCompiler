@@ -97,7 +97,9 @@ public class JavaWebCompiler implements HttpRequestHandler {
                     String[] arr = s.split(":");
                     String lineNumber = Integer.toString(Integer.parseInt(arr[1]) - 1);
                     arr[1] = lineNumber;
-                    errorLines.add(lineNumber);
+                    if (!s.contains("Tests.java")) {
+                        errorLines.add(lineNumber);
+                    }
                     arr[0] = arr[0].split("/")[3];
                     lines[i] = String.join(":", arr);
                 }

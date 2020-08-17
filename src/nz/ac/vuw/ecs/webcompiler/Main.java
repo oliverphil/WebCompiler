@@ -8,11 +8,13 @@ import org.apache.http.impl.bootstrap.HttpServer;
 import org.apache.http.impl.bootstrap.ServerBootstrap;
 
 import java.io.IOException;
+import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 
 public class Main {
 
     public static final String DATABASE_CONN_STRING = "jdbc:postgresql://localhost:5432/incremental_workloads";
+    public static final Properties DATABASE_PROPERTIES = new Properties();
 
     public static final ContentType TEXT_JAVASCRIPT = ContentType.create("text/javascript");
     public static final ContentType TEXT_CSS = ContentType.create("text/css");
@@ -22,6 +24,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         try {
+            DATABASE_PROPERTIES.setProperty("ssl", "true");
             HttpServer server = startWebServer();
             server.start();
             server.awaitTermination(-1, TimeUnit.MILLISECONDS);

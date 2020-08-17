@@ -80,7 +80,7 @@ public class TestRunner implements HttpRequestHandler {
         Runnable r = () -> {
             try {
                 ServerLogger.getLogger().info(String.format("User: %s, Action: Add Test Run To Database", user_id));
-                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
+                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
 
                 PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO test_result" +
                         "(timestamp, user_id, challenge, test_result) VALUES (?, ?, ?, ?);");

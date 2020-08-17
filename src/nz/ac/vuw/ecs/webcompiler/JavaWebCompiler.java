@@ -129,7 +129,7 @@ public class JavaWebCompiler implements HttpRequestHandler {
         Runnable r = () -> {
             try {
                 ServerLogger.getLogger().info(String.format("User: %s, Action: Add Compilation To Database", user_id));
-                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
+                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
 
                 PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO compile_request" +
                         "(timestamp, user_id, code, challenge) VALUES (?, ?, ?, ?);");

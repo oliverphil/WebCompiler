@@ -74,7 +74,7 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
         ServerLogger.getLogger().info(String.format("User: %s, Action: Add User To Database", id));
 
         try {
-            Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING);
+            Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
             PreparedStatement stmt = db.prepareStatement("INSERT INTO user_information" +
                     "(id, age, occupation, java_experience, education, other_langs, ide_experience) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?)");

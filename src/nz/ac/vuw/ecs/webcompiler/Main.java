@@ -24,7 +24,6 @@ public class Main {
 
     public static void main(String[] args) throws IOException {
         try {
-            DATABASE_PROPERTIES.setProperty("ssl", "true");
             HttpServer server = startWebServer();
             server.start();
             server.awaitTermination(-1, TimeUnit.MILLISECONDS);

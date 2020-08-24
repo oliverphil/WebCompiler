@@ -70,14 +70,15 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
         String education = jsonObject.getString("education");
         String other_langs = jsonObject.getString("otherLanguages");
         String ide_experience = jsonObject.getString("ideExperience");
+        String magic_number = jsonObject.getString("magic");
 
         ServerLogger.getLogger().info(String.format("User: %s, Action: Add User To Database", id));
 
         try {
             Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
             PreparedStatement stmt = db.prepareStatement("INSERT INTO user_information" +
-                    "(id, age, occupation, java_experience, education, other_langs, ide_experience) " +
-                    "VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    "(id, age, occupation, java_experience, education, other_langs, ide_experience, magic_number) " +
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
 
             stmt.setString(1, id);
             stmt.setString(2, age);
@@ -86,6 +87,7 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
             stmt.setString(5, education);
             stmt.setString(6, other_langs);
             stmt.setString(7, ide_experience);
+            stmt.setString(8, magic_number);
 
             stmt.executeUpdate();
             httpResponse.setStatusCode(HttpStatus.SC_OK);

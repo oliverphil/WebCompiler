@@ -127,9 +127,10 @@ public class JavaWebCompiler implements HttpRequestHandler {
 
     private void addToDatabase(Stream<String> stream, String user_id, String code, String challengeName, Timestamp timestamp) {
         Runnable r = () -> {
+            Connection db = null;
             try {
                 ServerLogger.getLogger().info(String.format("User: %s, Action: Add Compilation To Database", user_id));
-                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
+                db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
 
                 PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO compile_request" +
                         "(timestamp, user_id, code, challenge) VALUES (?, ?, ?, ?);");
@@ -178,6 +179,14 @@ public class JavaWebCompiler implements HttpRequestHandler {
                 }
             } catch (SQLException throwables) {
                 ServerLogger.getLogger().warning(throwables.toString());
+            } finally {
+                if (db != null) {
+                    try {
+                        db.close();
+                    } catch (SQLException throwables) {
+                        ServerLogger.getLogger().warning(throwables.toString());
+                    }
+                }
             }
         };
         r.run();

@@ -74,8 +74,9 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
 
         ServerLogger.getLogger().info(String.format("User: %s, Action: Add User To Database", id));
 
+        Connection db = null;
         try {
-            Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
+            db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
             PreparedStatement stmt = db.prepareStatement("INSERT INTO user_information" +
                     "(id, age, occupation, java_experience, education, other_langs, ide_experience, magic_number) " +
                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
@@ -91,9 +92,19 @@ public class UserInformationStorageHandler implements HttpRequestHandler {
 
             stmt.executeUpdate();
             httpResponse.setStatusCode(HttpStatus.SC_OK);
+
+            db.close();
             return;
         } catch (SQLException throwables) {
             ServerLogger.getLogger().warning(throwables.toString());
+        } finally {
+            if (db != null) {
+                try {
+                    db.close();
+                } catch (SQLException throwables) {
+                    ServerLogger.getLogger().warning(throwables.toString());
+                }
+            }
         }
         httpResponse.setStatusCode(HttpStatus.SC_INTERNAL_SERVER_ERROR);
     }

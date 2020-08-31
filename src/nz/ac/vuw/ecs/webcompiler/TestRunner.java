@@ -78,9 +78,10 @@ public class TestRunner implements HttpRequestHandler {
 
     private void saveRunToDatabase(String user_id, String challengeName, Timestamp timestamp, JsonObject json) {
         Runnable r = () -> {
+            Connection db = null;
             try {
                 ServerLogger.getLogger().info(String.format("User: %s, Action: Add Test Run To Database", user_id));
-                Connection db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
+                db = DriverManager.getConnection(Main.DATABASE_CONN_STRING, Main.DATABASE_PROPERTIES);
 
                 PreparedStatement insertCodeStmt = db.prepareStatement("INSERT INTO test_result" +
                         "(timestamp, user_id, challenge, test_result) VALUES (?, ?, ?, ?);");
@@ -111,9 +112,16 @@ public class TestRunner implements HttpRequestHandler {
                 insertCodeStmt.setString(3, challengeName);
                 insertCodeStmt.setString(4, results);
                 insertCodeStmt.executeUpdate();
-
             } catch (SQLException throwables) {
                 ServerLogger.getLogger().warning(throwables.toString());
+            } finally {
+                if (db != null) {
+                    try {
+                        db.close();
+                    } catch (SQLException throwables) {
+                        ServerLogger.getLogger().warning(throwables.toString());
+                    }
+                }
             }
         };
         r.run();

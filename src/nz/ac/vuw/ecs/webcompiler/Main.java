@@ -34,6 +34,7 @@ public class Main {
 
     public static HttpServer startWebServer() throws ClassNotFoundException {
         Class.forName("org.postgresql.Driver");
+        DATABASE_PROPERTIES.setProperty("connectTimeout", "60000");
         SocketConfig socketConfig = SocketConfig.custom().setSoTimeout(20*1000).build();
 
         ServerLogger logger = ServerLogger.setup();
